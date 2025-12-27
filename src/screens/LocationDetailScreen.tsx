@@ -126,7 +126,7 @@ export function LocationDetailScreen() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow p-8">
+        <div className="bg-white rounded-lg shadow p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">測定箇所情報</h2>
 
           {error && (
@@ -182,8 +182,10 @@ export function LocationDetailScreen() {
                   </label>
                   <input
                     id="vertical"
-                    type="number"
-                    min="1"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="1"
                     value={vertical}
                     onChange={(e) => setVertical(e.target.value)}
                     required
@@ -198,8 +200,10 @@ export function LocationDetailScreen() {
                   </label>
                   <input
                     id="horizontal"
-                    type="number"
-                    min="1"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="1"
                     value={horizontal}
                     onChange={(e) => setHorizontal(e.target.value)}
                     required
@@ -216,7 +220,9 @@ export function LocationDetailScreen() {
                 </label>
                 <input
                   id="diameter"
-                  type="number"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   min="1"
                   value={diameter}
                   onChange={(e) => setDiameter(e.target.value)}
@@ -234,8 +240,10 @@ export function LocationDetailScreen() {
               </label>
               <input
                 id="pointCount"
-                type="number"
-                min="1"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="1"
                 value={pointCount}
                 onChange={(e) => setPointCount(e.target.value)}
                 required

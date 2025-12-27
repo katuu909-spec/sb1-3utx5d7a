@@ -3,11 +3,24 @@
 ## 目的と概要
 - 空調機器の風量測定をモバイル/Web（React＋Vite）で行い、Supabase に測定データと画像を保存するシングルページアプリ。
 - ユーザーは案件（プロジェクト）単位で測定箇所を登録し、箇所ごとに複数点の測定値と撮影画像をアップロードする。
+- 現状: フロントは動作中。Supabase 側にテーブルが無い場合は下記「セットアップ」で作成が必要。
 
 ## 技術スタック
 - フロントエンド: React 18, TypeScript, Vite, Tailwind CSS, lucide-react
 - 認証・DB・ストレージ: Supabase (`@supabase/supabase-js`)
 - 状態管理: React Context (`AppContext`)
+
+## セットアップ（現状環境に必須）
+1. `.env.local` をプロジェクト直下に作成  
+   ```
+   VITE_SUPABASE_URL=あなたのSupabase URL
+   VITE_SUPABASE_ANON_KEY=あなたのanonキー
+   ```
+2. Supabase にテーブル・ポリシー・バケットを作成  
+   - Supabase ダッシュボード → SQL → New query に以下を貼って実行（作成済みならスキップ可）  
+   - 主要内容: `projects`/`measurement_points`/`measurement_readings` テーブル、RLS ポリシー、`measurement-images` バケット
+3. 依存関係: `npm install`
+4. 開発サーバー: `npm run dev -- --host 0.0.0.0 --port 5173`
 
 ## プロジェクト構成
 - `src/` アプリ本体
@@ -19,15 +32,16 @@
 
 ## データモデル（Supabase）
 - `projects`  
-  - `user_id`, `serial_number`, `model_type`, `model_number`, `measurement_date`
+  - `user_id`, `serial_number`, `model_type`, `model_number`, `measurement_date` (NOT NULL)  
+  - フロントは現在、新規作成時に `measurement_date` に当日を自動セット
 - `measurement_points`  
-  - `project_id`, `name`, `location_group_name`, `location_number`（グループ内の通し番号）  
+  - `project_id`, `name`, `location_group_name`, `location_number`（グループ内通し番号）  
   - 形状: `shape_type` (`rectangular`/`circular`)、寸法: `vertical_mm`, `horizontal_mm?`, `diameter_mm?`  
   - `target_point_count`（測定点予定数）, `is_completed`
 - `measurement_readings`  
   - `measurement_point_id`, `point_number`, `image_url`, `ave_wind_speed`
 - ストレージ: `measurement-images` バケット  
-  - 認証ユーザーの insert/select/delete を許可（RLS ポリシー）。画像は測定点ID配下に `timestamp.jpg` で保存。
+  - 認証ユーザーの insert/select/delete を許可。画像は測定点ID配下に `timestamp.jpg` で保存。
 
 ## 画面フローと主要ロジック
 - 認証: `LoginScreen` / `SignupScreen` で Supabase Auth を利用。セッション検出により `currentScreen` を `login` or `home` 初期化。

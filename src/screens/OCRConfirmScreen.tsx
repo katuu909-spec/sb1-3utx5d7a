@@ -153,8 +153,9 @@ export function OCRConfirmScreen() {
             </label>
             <input
               id="aveWindSpeed"
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*[.,]?[0-9]*"
               value={aveWindSpeed}
               onChange={(e) => setAveWindSpeed(e.target.value)}
               disabled={saving}

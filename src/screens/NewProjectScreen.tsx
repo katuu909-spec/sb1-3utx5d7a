@@ -31,6 +31,9 @@ export function NewProjectScreen() {
             serial_number: serialNumber.trim().toUpperCase(),
             model_type: modelType.trim().toUpperCase(),
             model_number: modelNumber.trim().toUpperCase(),
+            // measurement_date は NOT NULL 想定のため暫定で今日の日付を保存
+            // 必要に応じて日付入力フィールドを追加する
+            measurement_date: new Date().toISOString(),
           },
         ])
         .select()
@@ -72,7 +75,7 @@ export function NewProjectScreen() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow p-8">
+        <div className="bg-white rounded-lg shadow p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">機器情報入力</h2>
 
           {error && (

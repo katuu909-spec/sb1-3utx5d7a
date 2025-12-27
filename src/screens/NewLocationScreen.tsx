@@ -150,7 +150,7 @@ export function NewLocationScreen() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow p-8">
+        <div className="bg-white rounded-lg shadow p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">測定箇所情報</h2>
 
           {error && (
@@ -264,7 +264,9 @@ export function NewLocationScreen() {
                   </label>
                   <input
                     id="vertical"
-                    type="number"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                     value={verticalMm}
                     onChange={(e) => setVerticalMm(e.target.value)}
                     required
@@ -281,7 +283,9 @@ export function NewLocationScreen() {
                   </label>
                   <input
                     id="horizontal"
-                    type="number"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                     value={horizontalMm}
                     onChange={(e) => setHorizontalMm(e.target.value)}
                     required
@@ -299,7 +303,9 @@ export function NewLocationScreen() {
                 </label>
                 <input
                   id="diameter"
-                  type="number"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={diameterMm}
                   onChange={(e) => setDiameterMm(e.target.value)}
                   required
@@ -317,7 +323,9 @@ export function NewLocationScreen() {
               </label>
               <input
                 id="pointCount"
-                type="number"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={pointCount}
                 onChange={(e) => setPointCount(e.target.value)}
                 required

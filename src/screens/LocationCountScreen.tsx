@@ -50,7 +50,7 @@ export function LocationCountScreen() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow p-8">
+          <div className="bg-white rounded-lg shadow p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">
             {currentLocationGroupName}の測定箇所数を選択してください
           </h2>
@@ -78,7 +78,9 @@ export function LocationCountScreen() {
               </label>
               <input
                 id="count"
-                type="number"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 min="1"
                 value={count}
                 onChange={(e) => setCount(e.target.value)}
