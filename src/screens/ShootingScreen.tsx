@@ -62,7 +62,14 @@ export function ShootingScreen() {
     }
 
     const avgSpeed = readings.reduce((sum, r) => sum + r.ave_wind_speed, 0) / readings.length;
-    const area = (currentMeasurementPoint.vertical_mm * currentMeasurementPoint.horizontal_mm) / 1000000;
+
+    // 測定面の面積（m²）を形状ごとに計算する
+    const area =
+      currentMeasurementPoint.shape_type === 'circular' && currentMeasurementPoint.diameter_mm
+        ? (Math.PI * Math.pow(currentMeasurementPoint.diameter_mm / 2, 2)) / 1000000
+        : currentMeasurementPoint.horizontal_mm
+          ? (currentMeasurementPoint.vertical_mm * currentMeasurementPoint.horizontal_mm) / 1000000
+          : 0;
     const airflow = avgSpeed * area * 60;
 
     return {

@@ -8,6 +8,7 @@ export function LoginScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const { setCurrentScreen } = useApp();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -84,6 +85,36 @@ export function LoginScreen() {
             {loading ? 'ログイン中...' : 'ログイン'}
           </button>
         </form>
+
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              if (!email) {
+                setError('パスワードリセットにはメールアドレスが必要です');
+                return;
+              }
+              setResetting(true);
+              try {
+                const redirectTo = `${window.location.origin}/`; // 必要に応じて専用リセットページへ変更
+                const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+                  redirectTo,
+                });
+                if (resetError) throw resetError;
+                alert('パスワードリセット用のメールを送信しました');
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'リセットメール送信に失敗しました');
+              } finally {
+                setResetting(false);
+              }
+            }}
+            disabled={loading || resetting}
+            className="text-sm text-blue-600 hover:text-blue-700 font-semibold disabled:text-gray-400"
+          >
+            パスワードをお忘れの方はこちら
+          </button>
+        </div>
 
         <div className="mt-6 text-center">
           <p className="text-gray-600 text-sm">
