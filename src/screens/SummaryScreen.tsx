@@ -213,7 +213,7 @@ export function SummaryScreen() {
               </div>
 
               <div className="p-6 space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {group.mergedLocations.map((loc) => {
                     return (
                       <div
@@ -271,22 +271,22 @@ export function SummaryScreen() {
                 </div>
 
                 <div className="overflow-x-auto rounded-xl border border-emerald-100">
-                  <table className="min-w-full divide-y divide-emerald-100">
-                    <thead className="bg-emerald-50">
+                  <table className="min-w-full divide-y divide-emerald-100 text-sm md:text-base">
+                    <thead className="bg-emerald-50 sticky top-0">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
                           測定箇所
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
                           測定点
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
                           AVE風速 (m/s)
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
                           風量 (m³/min)
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
                           画像
                         </th>
                       </tr>
@@ -296,18 +296,20 @@ export function SummaryScreen() {
                         return loc.readingEntries.map(({ reading, name }) => {
                           const airflow = (reading.ave_wind_speed ?? 0) * loc.area * 60;
                           return (
-                            <tr key={reading.id} className="hover:bg-emerald-50/50 transition">
-                              <td className="px-4 py-3 text-sm text-emerald-900 font-medium">
+                            <tr key={reading.id} className="hover:bg-emerald-50/50 transition align-middle">
+                              <td className="px-4 py-3 text-emerald-900 font-medium whitespace-nowrap">
                                 {name}
                               </td>
-                              <td className="px-4 py-3 text-sm text-emerald-800">{reading.point_number}</td>
-                              <td className="px-4 py-3 text-sm text-emerald-800">
+                              <td className="px-4 py-3 text-emerald-800 whitespace-nowrap">
+                                {reading.point_number}
+                              </td>
+                              <td className="px-4 py-3 text-emerald-800 whitespace-nowrap">
                                 {reading.ave_wind_speed.toFixed(2)}
                               </td>
-                              <td className="px-4 py-3 text-sm text-emerald-900 font-semibold">
+                              <td className="px-4 py-3 text-emerald-900 font-semibold whitespace-nowrap">
                                 {airflow.toFixed(2)}
                               </td>
-                              <td className="px-4 py-3 text-sm text-emerald-800">
+                              <td className="px-4 py-3 text-emerald-800 whitespace-nowrap">
                                 {reading.image_url ? (
                                   <a
                                     href={reading.image_url}
