@@ -30,7 +30,8 @@ export type AppScreen =
   | 'shooting'
   | 'ocr-confirm'
   | 'results'
-  | 'save-confirm';
+  | 'save-confirm'
+  | 'summary';
 
 export interface MeasurementSession {
   projectId: string;

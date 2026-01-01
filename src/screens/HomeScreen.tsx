@@ -42,6 +42,11 @@ export function HomeScreen() {
     setCurrentScreen('measurement-locations');
   };
 
+  const handleSummary = (project: Project) => {
+    setCurrentProject(project);
+    setCurrentScreen('summary');
+  };
+
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm('この案件を削除しますか？')) return;
 
@@ -144,6 +149,15 @@ export function HomeScreen() {
                     title="削除"
                   >
                     <Trash2 className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSummary(project);
+                    }}
+                    className="ml-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition"
+                  >
+                    集計
                   </button>
                 </div>
               </div>

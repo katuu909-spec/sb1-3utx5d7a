@@ -11,6 +11,7 @@ import { NewLocationScreen } from './screens/NewLocationScreen';
 import { ShootingScreen } from './screens/ShootingScreen';
 import { OCRConfirmScreen } from './screens/OCRConfirmScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
+import { SummaryScreen } from './screens/SummaryScreen';
 
 function AppContent() {
   const { currentScreen, loading } = useApp();
@@ -48,6 +49,8 @@ function AppContent() {
       return <OCRConfirmScreen />;
     case 'results':
       return <ResultsScreen />;
+    case 'summary':
+      return <SummaryScreen />;
     default:
       return <HomeScreen />;
   }
