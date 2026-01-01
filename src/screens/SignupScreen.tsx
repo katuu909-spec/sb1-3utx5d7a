@@ -15,6 +15,8 @@ export function SignupScreen() {
     e.preventDefault();
     setError('');
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     if (password !== confirmPassword) {
       setError('パスワードが一致しません');
       return;
@@ -29,7 +31,7 @@ export function SignupScreen() {
 
     try {
       const { error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
       });
 

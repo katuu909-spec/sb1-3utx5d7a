@@ -17,8 +17,9 @@ export function LoginScreen() {
     setLoading(true);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       });
 
