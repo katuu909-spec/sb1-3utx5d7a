@@ -312,8 +312,8 @@ export function OCRConfirmScreen() {
         data: { text, confidence },
       } = await Tesseract.recognize(roiDataUrl, 'eng', {
         workerPath: 'https://unpkg.com/tesseract.js@4.0.2/dist/worker.min.js',
-        // corePath は wasm ではなく JS ローダーを指定し、ブラウザの MIME チェックを回避
-        corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@4.0.2/tesseract-core-simd.js',
+        // corePath: wasm本体を読み込むJSラッパー（.wasm.js）を指定し、MIME問題を回避
+        corePath: 'https://unpkg.com/tesseract.js-core@4.0.2/tesseract-core-simd.wasm.js',
         langPath: 'https://tessdata.projectnaptha.com/5/tessdata_fast',
         tessedit_pageseg_mode: 7, // single line
         tessedit_char_whitelist: '0123456789.-',
