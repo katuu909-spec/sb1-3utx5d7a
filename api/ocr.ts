@@ -1,0 +1,88 @@
+import sharp from 'sharp';
+import Tesseract from 'tesseract.js';
+
+interface Roi {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+const DEFAULT_ROI: Roi = { x: 0, y: 0, width: Number.MAX_SAFE_INTEGER, height: Number.MAX_SAFE_INTEGER };
+
+function dataUrlToBuffer(dataUrl: string) {
+  const base64 = dataUrl.replace(/^data:.*;base64,/, '');
+  return Buffer.from(base64, 'base64');
+}
+
+function parseNumber(text: string): number | null {
+  const match = text.match(/-?\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const num = parseFloat(match[0]);
+  return Number.isFinite(num) ? num : null;
+}
+
+export default async function handler(req: any, res: any) {
+  if (req.method !== 'POST') {
+    res.status(405).json({ ok: false, error: 'Method not allowed' });
+    return;
+  }
+
+  try {
+    const { imageBase64, rois }: { imageBase64?: string; rois?: Roi[] } = req.body || {};
+
+    if (!imageBase64) {
+      res.status(400).json({ ok: false, error: 'imageBase64 is required' });
+      return;
+    }
+
+    const buffer = dataUrlToBuffer(imageBase64);
+    const meta = await sharp(buffer).metadata();
+    const targetWidth = meta.width && meta.width < 1200 ? 1200 : meta.width || undefined;
+    const resized = await sharp(buffer)
+      .resize(targetWidth ? { width: targetWidth } : undefined)
+      .grayscale()
+      .normalize()
+      .toBuffer();
+
+    const scale = meta.width && targetWidth ? targetWidth / meta.width : 1;
+    const regions: Roi[] = (rois?.length ? rois : [DEFAULT_ROI]).map((r) => ({
+      x: Math.max(0, Math.round(r.x * scale)),
+      y: Math.max(0, Math.round(r.y * scale)),
+      width: Math.round((r.width === Number.MAX_SAFE_INTEGER ? (meta.width || 0) : r.width) * scale),
+      height: Math.round((r.height === Number.MAX_SAFE_INTEGER ? (meta.height || 0) : r.height) * scale),
+    }));
+
+    const results = [];
+    for (const roi of regions) {
+      const roiBuffer = await sharp(resized)
+        .extract({
+          left: roi.x,
+          top: roi.y,
+          width: Math.max(1, roi.width),
+          height: Math.max(1, roi.height),
+        })
+        .threshold()
+        .toBuffer();
+
+      const {
+        data: { text, confidence },
+      } = await Tesseract.recognize(roiBuffer, 'eng', {
+        tessedit_pageseg_mode: 7, // single line
+        tessedit_char_whitelist: '0123456789.-',
+      } as any);
+
+      results.push({
+        text: text.trim(),
+        value: parseNumber(text),
+        confidence,
+      });
+    }
+
+    res.status(200).json({ ok: true, results });
+  } catch (error: any) {
+    console.error('OCR error', error);
+    res.status(500).json({ ok: false, error: error?.message || 'ocr_failed' });
+  }
+}
+

@@ -274,19 +274,19 @@ export function SummaryScreen() {
                   <table className="min-w-full divide-y divide-emerald-100 text-sm md:text-base">
                     <thead className="bg-emerald-50 sticky top-0">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 tracking-wider whitespace-nowrap">
                           測定箇所
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 tracking-wider whitespace-nowrap">
                           測定点
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
-                          AVE風速 (m/s)
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 tracking-wider whitespace-nowrap">
+                          Ave風速 (m/s)
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 tracking-wider whitespace-nowrap">
                           風量 (m³/min)
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 uppercase tracking-wider whitespace-nowrap">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-800 tracking-wider whitespace-nowrap">
                           画像
                         </th>
                       </tr>
