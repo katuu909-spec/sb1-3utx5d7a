@@ -67,8 +67,9 @@ export default async function handler(req: any, res: any) {
         .threshold()
         .toBuffer();
 
-      const workerPath = path.resolve(process.cwd(), 'node_modules/tesseract.js/dist/worker.min.js');
-      const corePath = path.resolve(process.cwd(), 'node_modules/tesseract.js-core/tesseract-core-simd.wasm');
+      // Node 環境用のワーカー/コアパス（Vercelでの addEventListener エラー回避）
+      const workerPath = require.resolve('tesseract.js/dist/node/worker.js');
+      const corePath = require.resolve('tesseract.js-core/tesseract-core-simd.wasm');
       const langPath = 'https://tessdata.projectnaptha.com/5/tessdata_fast';
 
       const {
