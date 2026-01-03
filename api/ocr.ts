@@ -70,6 +70,11 @@ export default async function handler(req: any, res: any) {
         .threshold()
         .toBuffer();
 
+      // Node 環境で addEventListener が未定義の場合のフォールバック
+      if (typeof (globalThis as any).addEventListener !== 'function') {
+        (globalThis as any).addEventListener = () => {};
+      }
+
       // ワーカー/コアをローカルnode_modulesから絶対パス指定（Vercel環境でも解決可能なものを使用）
       const workerPath = require.resolve('tesseract.js/dist/worker.min.js');
       const corePath = require.resolve('tesseract.js-core/tesseract-core-simd.wasm');
