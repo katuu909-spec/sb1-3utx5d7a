@@ -70,8 +70,8 @@ export default async function handler(req: any, res: any) {
         .threshold()
         .toBuffer();
 
-      // Node 環境用のワーカー/コアパス（Vercelでの addEventListener エラー回避）
-      const workerPath = require.resolve('tesseract.js/dist/node/worker.js');
+      // ワーカー/コアをローカルnode_modulesから絶対パス指定（Vercel環境でも解決可能なものを使用）
+      const workerPath = require.resolve('tesseract.js/dist/worker.min.js');
       const corePath = require.resolve('tesseract.js-core/tesseract-core-simd.wasm');
       const langPath = 'https://tessdata.projectnaptha.com/5/tessdata_fast';
 
