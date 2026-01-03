@@ -78,7 +78,8 @@ export default async function handler(req: any, res: any) {
       }
 
       // Node向けワーカーとコアを指定（tesseract.js 4.x）
-      const workerPath = require.resolve('tesseract.js/dist/node/worker-node.js');
+      // v4 には node/worker-node.js がないため dist/worker.js を利用
+      const workerPath = require.resolve('tesseract.js/dist/worker.js');
       let corePath: string;
       try {
         corePath = require.resolve('tesseract.js-core/tesseract-core.wasm');
