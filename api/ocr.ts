@@ -77,8 +77,14 @@ export default async function handler(req: any, res: any) {
         (globalThis as any).addEventListener = () => {};
       }
 
-      // workerPath は指定せず、tesseract.js デフォルトに任せる（ブラウザ/Node切替を内部に委ねる）
-      const corePath = 'https://unpkg.com/tesseract.js-core@2.2.0/tesseract-core.wasm';
+      // worker は同梱のものを使い、core はローカルファイル (file://) を優先し、無ければ CDN をフォールバック
+      const workerPath = require.resolve('tesseract.js/dist/worker.min.js');
+      let corePath = `file://${require.resolve('tesseract.js-core/tesseract-core.wasm')}`;
+      try {
+        require.resolve('tesseract.js-core/tesseract-core.wasm');
+      } catch {
+        corePath = 'https://unpkg.com/tesseract.js-core@2.2.0/tesseract-core.wasm';
+      }
       const langPath = 'https://tessdata.projectnaptha.com/5/tessdata_fast';
 
       const {
@@ -86,6 +92,7 @@ export default async function handler(req: any, res: any) {
       } = await Tesseract.recognize(roiBuffer, 'eng', {
         tessedit_pageseg_mode: 7, // single line
         tessedit_char_whitelist: '0123456789.-',
+        workerPath,
         corePath,
         langPath,
       } as any);
