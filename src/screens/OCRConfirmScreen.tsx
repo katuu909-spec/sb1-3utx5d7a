@@ -308,7 +308,8 @@ export function OCRConfirmScreen() {
       // ROI 部分を切り出してクライアントサイドで OCR 実行
       const roiDataUrl = await cropDataUrl(resized.dataUrl, roiScaled);
       const { default: Tesseract } = await import('tesseract.js');
-      const langPathLocal = `${window.location.origin}/tessdata/eng.traineddata.gz`;
+      // langPath はディレクトリを指定すると、内部で "eng.traineddata.gz" が連結される
+      const langPathLocal = `${window.location.origin}/tessdata`;
 
       const {
         data: { text, confidence },
@@ -316,7 +317,7 @@ export function OCRConfirmScreen() {
         workerPath: 'https://unpkg.com/tesseract.js@4.0.2/dist/worker.min.js',
         // corePath: wasm本体を読み込むJSラッパー（.wasm.js）を指定し、MIME問題を回避
         corePath: 'https://unpkg.com/tesseract.js-core@4.0.2/tesseract-core-simd.wasm.js',
-        // オフライン運用: public/tessdata/eng.traineddata.gz を配置して読み込む
+        // オフライン運用: public/tessdata に eng.traineddata.gz を配置（langPath + /eng.traineddata.gz を内部で組み立て）
         langPath: langPathLocal,
         tessedit_pageseg_mode: 7, // single line
         tessedit_char_whitelist: '0123456789.-',
