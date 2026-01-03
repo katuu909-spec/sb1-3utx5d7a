@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 
 async function resizeDataUrl(dataUrl: string, maxWidth = 1200, quality = 0.8) {
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<{ dataUrl: string; width: number; height: number; scale: number }>((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const scale = img.width > maxWidth ? maxWidth / img.width : 1;
@@ -19,11 +19,24 @@ async function resizeDataUrl(dataUrl: string, maxWidth = 1200, quality = 0.8) {
         return;
       }
       ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      resolve({
+        dataUrl: canvas.toDataURL('image/jpeg', quality),
+        width: targetWidth,
+        height: targetHeight,
+        scale,
+      });
     };
     img.onerror = (e) => reject(e);
     img.src = dataUrl;
   });
+}
+
+function clampRoi(roi: { x: number; y: number; width: number; height: number }, maxW: number, maxH: number) {
+  const x = Math.max(0, Math.min(roi.x, maxW));
+  const y = Math.max(0, Math.min(roi.y, maxH));
+  const width = Math.max(1, Math.min(roi.width, maxW - x));
+  const height = Math.max(1, Math.min(roi.height, maxH - y));
+  return { x, y, width, height };
 }
 
 export function OCRConfirmScreen() {
@@ -174,7 +187,7 @@ export function OCRConfirmScreen() {
 
     try {
       // 画像を送る前にクライアント側でリサイズ（短辺1200px程度に圧縮）
-      const resizedBase64 = await resizeDataUrl(currentPhotoData, 1200, 0.8);
+      const resized = await resizeDataUrl(currentPhotoData, 1200, 0.8);
 
       const img = imgRef.current;
       const container = containerRef.current;
@@ -196,19 +209,23 @@ export function OCRConfirmScreen() {
         setRoi(targetRoi);
       }
 
-      const scaleX = naturalWidth / displayRect.width;
-      const scaleY = naturalHeight / displayRect.height;
+      const scaleX = resized.width / displayRect.width;
+      const scaleY = resized.height / displayRect.height;
+
+      const roiScaled = clampRoi(
+        {
+          x: Math.round(targetRoi.x * scaleX),
+          y: Math.round(targetRoi.y * scaleY),
+          width: Math.round(targetRoi.width * scaleX),
+          height: Math.round(targetRoi.height * scaleY),
+        },
+        resized.width,
+        resized.height
+      );
 
       const payload = {
-        imageBase64: resizedBase64,
-        rois: [
-          {
-            x: Math.max(0, Math.round(targetRoi.x * scaleX)),
-            y: Math.max(0, Math.round(targetRoi.y * scaleY)),
-            width: Math.max(1, Math.round(targetRoi.width * scaleX)),
-            height: Math.max(1, Math.round(targetRoi.height * scaleY)),
-          },
-        ],
+        imageBase64: resized.dataUrl,
+        rois: [roiScaled],
       };
 
       const res = await fetch('/api/ocr', {
@@ -233,33 +250,6 @@ export function OCRConfirmScreen() {
     } finally {
       setOcrLoading(false);
     }
-  };
-
-  const applyQuickRoi = (preset: 'top' | 'middle' | 'bottom' | 'wide') => {
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const paddingX = rect.width * 0.05;
-    const height = rect.height * 0.22;
-    const width = rect.width * 0.9;
-    let y = rect.height * 0.1;
-    if (preset === 'middle') y = rect.height * 0.4;
-    if (preset === 'bottom') y = rect.height * 0.65;
-    if (preset === 'wide') {
-      setRoi({
-        x: rect.width * 0.1,
-        y: rect.height * 0.25,
-        width: rect.width * 0.8,
-        height: rect.height * 0.5,
-      });
-      return;
-    }
-    setRoi({
-      x: paddingX,
-      y,
-      width,
-      height,
-    });
   };
 
   if (!currentMeasurementPoint || !currentPhotoData) {
@@ -323,43 +313,6 @@ export function OCRConfirmScreen() {
                 <li>範囲が決まったら「この範囲で読み取る」ボタンを押してOCRを実行してください。</li>
                 <li>読み取りがうまくいかない場合は、再撮影または範囲を調整してください。</li>
               </ul>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="text-xs text-blue-800 mr-2">クイック範囲:</span>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="px-3 py-2 border border-blue-200 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-50 transition"
-                    onClick={() => applyQuickRoi('top')}
-                    disabled={saving || ocrLoading}
-                  >
-                    上段
-                  </button>
-                  <button
-                    type="button"
-                    className="px-3 py-2 border border-blue-200 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-50 transition"
-                    onClick={() => applyQuickRoi('middle')}
-                    disabled={saving || ocrLoading}
-                  >
-                    中央
-                  </button>
-                  <button
-                    type="button"
-                    className="px-3 py-2 border border-blue-200 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-50 transition"
-                    onClick={() => applyQuickRoi('bottom')}
-                    disabled={saving || ocrLoading}
-                  >
-                    下段
-                  </button>
-                  <button
-                    type="button"
-                    className="px-3 py-2 border border-blue-200 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-50 transition"
-                    onClick={() => applyQuickRoi('wide')}
-                    disabled={saving || ocrLoading}
-                  >
-                    広め
-                  </button>
-                </div>
-              </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
