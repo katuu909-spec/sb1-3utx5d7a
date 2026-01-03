@@ -68,6 +68,7 @@ export function OCRConfirmScreen() {
   const [ocrValue, setOcrValue] = useState<number | null>(null);
   const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
   const [roi, setRoi] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [activePointerId, setActivePointerId] = useState<number | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -169,15 +170,22 @@ export function OCRConfirmScreen() {
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (saving || ocrLoading) return;
+    if (activePointerId !== null && activePointerId !== e.pointerId) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    setStartPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    setStartPoint(point);
+    setRoi({ x: point.x, y: point.y, width: 1, height: 1 });
     setIsSelecting(true);
+    setActivePointerId(e.pointerId);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault();
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isSelecting || !startPoint) return;
+    if (activePointerId !== null && activePointerId !== e.pointerId) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     const x = Math.min(startPoint.x, current.x);
@@ -185,11 +193,17 @@ export function OCRConfirmScreen() {
     const width = Math.abs(current.x - startPoint.x);
     const height = Math.abs(current.y - startPoint.y);
     setRoi({ x, y, width, height });
+    e.preventDefault();
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (activePointerId !== null && activePointerId !== e.pointerId) return;
     setIsSelecting(false);
     setStartPoint(null);
+    setActivePointerId(null);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
   };
 
   const resetRoi = () => {
@@ -256,7 +270,7 @@ export function OCRConfirmScreen() {
 
       const value = parseFloat((text.match(/-?\d+(?:\.\d+)?/) || [])[0] || '');
       if (Number.isNaN(value)) {
-        setError('数値を読み取れませんでした。範囲を調整するか再撮影してください。');
+        setError('OCRは実行されましたが数値を抽出できませんでした。範囲を調整するか再撮影してください。');
       } else {
         setOcrValue(value);
         setOcrConfidence(confidence ?? null);
@@ -302,12 +316,20 @@ export function OCRConfirmScreen() {
             <div
               className="bg-black rounded-lg overflow-hidden relative select-none"
               ref={containerRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+              style={{ touchAction: 'none' }}
             >
-              <img ref={imgRef} src={currentPhotoData} alt="測定画像" className="w-full h-auto block" />
+              <img
+                ref={imgRef}
+                src={currentPhotoData}
+                alt="測定画像"
+                className="w-full h-auto block"
+                draggable={false}
+              />
               {roi && (
                 <div
                   className="absolute border-2 border-blue-400 bg-blue-200/20 rounded"
