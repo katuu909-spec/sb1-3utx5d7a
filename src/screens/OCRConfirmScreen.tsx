@@ -3,6 +3,29 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
 
+async function resizeDataUrl(dataUrl: string, maxWidth = 1200, quality = 0.8) {
+  return new Promise<string>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = img.width > maxWidth ? maxWidth / img.width : 1;
+      const targetWidth = Math.round(img.width * scale);
+      const targetHeight = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas context not available'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = (e) => reject(e);
+    img.src = dataUrl;
+  });
+}
+
 export function OCRConfirmScreen() {
   const [aveWindSpeed, setAveWindSpeed] = useState('');
   const [error, setError] = useState('');
@@ -150,6 +173,9 @@ export function OCRConfirmScreen() {
     setOcrLoading(true);
 
     try {
+      // 画像を送る前にクライアント側でリサイズ（短辺1200px程度に圧縮）
+      const resizedBase64 = await resizeDataUrl(currentPhotoData, 1200, 0.8);
+
       const img = imgRef.current;
       const container = containerRef.current;
       if (!img || !container) throw new Error('画像が読み込まれていません');
@@ -174,7 +200,7 @@ export function OCRConfirmScreen() {
       const scaleY = naturalHeight / displayRect.height;
 
       const payload = {
-        imageBase64: currentPhotoData,
+        imageBase64: resizedBase64,
         rois: [
           {
             x: Math.max(0, Math.round(targetRoi.x * scaleX)),
@@ -207,6 +233,33 @@ export function OCRConfirmScreen() {
     } finally {
       setOcrLoading(false);
     }
+  };
+
+  const applyQuickRoi = (preset: 'top' | 'middle' | 'bottom' | 'wide') => {
+    const container = containerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const paddingX = rect.width * 0.05;
+    const height = rect.height * 0.22;
+    const width = rect.width * 0.9;
+    let y = rect.height * 0.1;
+    if (preset === 'middle') y = rect.height * 0.4;
+    if (preset === 'bottom') y = rect.height * 0.65;
+    if (preset === 'wide') {
+      setRoi({
+        x: rect.width * 0.1,
+        y: rect.height * 0.25,
+        width: rect.width * 0.8,
+        height: rect.height * 0.5,
+      });
+      return;
+    }
+    setRoi({
+      x: paddingX,
+      y,
+      width,
+      height,
+    });
   };
 
   if (!currentMeasurementPoint || !currentPhotoData) {
@@ -271,6 +324,43 @@ export function OCRConfirmScreen() {
                 <li>読み取りがうまくいかない場合は、再撮影または範囲を調整してください。</li>
               </ul>
               <div className="mt-3 flex flex-wrap gap-2">
+                <span className="text-xs text-blue-800 mr-2">クイック範囲:</span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="px-3 py-2 border border-blue-200 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-50 transition"
+                    onClick={() => applyQuickRoi('top')}
+                    disabled={saving || ocrLoading}
+                  >
+                    上段
+                  </button>
+                  <button
+                    type="button"
+                    className="px-3 py-2 border border-blue-200 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-50 transition"
+                    onClick={() => applyQuickRoi('middle')}
+                    disabled={saving || ocrLoading}
+                  >
+                    中央
+                  </button>
+                  <button
+                    type="button"
+                    className="px-3 py-2 border border-blue-200 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-50 transition"
+                    onClick={() => applyQuickRoi('bottom')}
+                    disabled={saving || ocrLoading}
+                  >
+                    下段
+                  </button>
+                  <button
+                    type="button"
+                    className="px-3 py-2 border border-blue-200 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-50 transition"
+                    onClick={() => applyQuickRoi('wide')}
+                    disabled={saving || ocrLoading}
+                  >
+                    広め
+                  </button>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
                 <button
                   type="button"
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition disabled:bg-gray-400"
