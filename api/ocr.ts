@@ -78,12 +78,16 @@ export default async function handler(req: any, res: any) {
       }
 
       // tesseract.js 2.x の Node 用ワーカーとコアを使用
-      const workerPath = require.resolve('tesseract.js/src/node/worker.js');
+      const workerPath = require.resolve('tesseract.js/dist/node/worker.js');
       let corePath: string;
       try {
         corePath = require.resolve('tesseract.js-core/tesseract-core.wasm');
       } catch {
-        corePath = require.resolve('tesseract.js-core/tesseract-core-simd.wasm');
+        try {
+          corePath = require.resolve('tesseract.js-core/tesseract-core-simd.wasm');
+        } catch {
+          corePath = 'https://unpkg.com/tesseract.js-core@2.2.0/tesseract-core.wasm';
+        }
       }
       const langPath = 'https://tessdata.projectnaptha.com/5/tessdata_fast';
 
