@@ -138,6 +138,35 @@ export function OCRConfirmScreen() {
             <div className="bg-black rounded-lg overflow-hidden">
               <img src={currentPhotoData} alt="測定画像" className="w-full h-auto" />
             </div>
+            <div className="mt-4 bg-blue-50 border border-blue-100 text-blue-900 rounded-lg p-4 text-sm leading-relaxed">
+              <p className="font-semibold mb-2">OCRをかける位置を教えてください</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>読み取りたい数値の「範囲」を決めてください（数値部分だけを囲むイメージ）。</li>
+                <li>範囲が決まったら「この範囲で読み取る」ボタンを押してOCRを実行してください。</li>
+                <li>読み取りがうまくいかない場合は、再撮影または範囲を調整してください。</li>
+              </ul>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition disabled:bg-gray-400"
+                  disabled
+                  title="（実装予定）範囲選択後にOCRを実行します"
+                >
+                  この範囲で読み取る
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-blue-200 text-blue-800 text-sm font-semibold rounded-lg hover:bg-blue-50 transition disabled:bg-gray-100"
+                  disabled
+                  title="（実装予定）範囲をリセットします"
+                >
+                  範囲をリセット
+                </button>
+              </div>
+              <p className="text-xs text-blue-800 mt-2">
+                ※範囲選択とOCR実行のUIは順次追加予定です。現状は読み取りたい数値を手入力してください。
+              </p>
+            </div>
           </div>
 
           {error && (
