@@ -314,7 +314,8 @@ export function OCRConfirmScreen() {
         workerPath: 'https://unpkg.com/tesseract.js@4.0.2/dist/worker.min.js',
         // corePath: wasm本体を読み込むJSラッパー（.wasm.js）を指定し、MIME問題を回避
         corePath: 'https://unpkg.com/tesseract.js-core@4.0.2/tesseract-core-simd.wasm.js',
-        langPath: 'https://tessdata.projectnaptha.com/5/tessdata_fast',
+        // langPath: CDNミラーを使用し、404を回避
+        langPath: 'https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/5/tessdata_fast',
         tessedit_pageseg_mode: 7, // single line
         tessedit_char_whitelist: '0123456789.-',
       } as any);
