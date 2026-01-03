@@ -77,11 +77,11 @@ export default async function handler(req: any, res: any) {
         (globalThis as any).addEventListener = () => {};
       }
 
-      // Node向け worker と core を優先的に使用（@tesseract.js/node を利用）
-      const workerPath = require.resolve('tesseract.js/src/node/worker-script/node/index.js');
+      // worker は tesseract.js 同梱のもの、core はネイティブ (@tesseract.js/node が無いため tesseract.js-node を利用)
+      const workerPath = require.resolve('tesseract.js/dist/worker.min.js');
       let corePath: string;
       try {
-        corePath = require.resolve('@tesseract.js/node');
+        corePath = require.resolve('tesseract.js-node');
       } catch {
         // フォールバック: CDN wasm
         corePath = 'https://unpkg.com/tesseract.js-core@4.0.1/tesseract-core.wasm';
