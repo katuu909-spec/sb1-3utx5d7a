@@ -77,7 +77,9 @@ export default async function handler(req: any, res: any) {
         (globalThis as any).addEventListener = () => {};
       }
 
-      // パス指定を外し、パッケージ同梱のデフォルトを利用（Nodeランタイムで動作する形に戻す）
+      // worker はローカルの dist/worker.min.js を使用し、core は CDN で取得して ENOENT を回避
+      const workerPath = require.resolve('tesseract.js/dist/worker.min.js');
+      const corePath = 'https://unpkg.com/tesseract.js-core@4.0.1/tesseract-core.wasm';
       const langPath = 'https://tessdata.projectnaptha.com/5/tessdata_fast';
 
       const {
@@ -85,6 +87,8 @@ export default async function handler(req: any, res: any) {
       } = await Tesseract.recognize(roiBuffer, 'eng', {
         tessedit_pageseg_mode: 7, // single line
         tessedit_char_whitelist: '0123456789.-',
+        workerPath,
+        corePath,
         langPath,
       } as any);
 
