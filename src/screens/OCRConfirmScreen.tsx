@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
@@ -7,6 +7,14 @@ export function OCRConfirmScreen() {
   const [aveWindSpeed, setAveWindSpeed] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrValue, setOcrValue] = useState<number | null>(null);
+  const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
+  const [roi, setRoi] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const {
     currentMeasurementPoint,
     currentPhotoData,
@@ -105,6 +113,102 @@ export function OCRConfirmScreen() {
     }
   };
 
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (saving || ocrLoading) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setStartPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    setIsSelecting(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isSelecting || !startPoint) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const x = Math.min(startPoint.x, current.x);
+    const y = Math.min(startPoint.y, current.y);
+    const width = Math.abs(current.x - startPoint.x);
+    const height = Math.abs(current.y - startPoint.y);
+    setRoi({ x, y, width, height });
+  };
+
+  const handleMouseUp = () => {
+    setIsSelecting(false);
+    setStartPoint(null);
+  };
+
+  const resetRoi = () => {
+    setRoi(null);
+    setOcrValue(null);
+    setOcrConfidence(null);
+  };
+
+  const runOcr = async () => {
+    if (!currentPhotoData) return;
+    setError('');
+    setOcrValue(null);
+    setOcrConfidence(null);
+    setOcrLoading(true);
+
+    try {
+      const img = imgRef.current;
+      const container = containerRef.current;
+      if (!img || !container) throw new Error('画像が読み込まれていません');
+
+      const naturalWidth = img.naturalWidth;
+      const naturalHeight = img.naturalHeight;
+      const displayRect = container.getBoundingClientRect();
+
+      let targetRoi = roi;
+      if (!targetRoi) {
+        // デフォルト: 画像中央を幅80%, 高さ40%で切り出す
+        targetRoi = {
+          x: displayRect.width * 0.1,
+          y: displayRect.height * 0.3,
+          width: displayRect.width * 0.8,
+          height: displayRect.height * 0.4,
+        };
+        setRoi(targetRoi);
+      }
+
+      const scaleX = naturalWidth / displayRect.width;
+      const scaleY = naturalHeight / displayRect.height;
+
+      const payload = {
+        imageBase64: currentPhotoData,
+        rois: [
+          {
+            x: Math.max(0, Math.round(targetRoi.x * scaleX)),
+            y: Math.max(0, Math.round(targetRoi.y * scaleY)),
+            width: Math.max(1, Math.round(targetRoi.width * scaleX)),
+            height: Math.max(1, Math.round(targetRoi.height * scaleY)),
+          },
+        ],
+      };
+
+      const res = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'OCRに失敗しました');
+
+      const first = data.results?.[0];
+      if (!first || first.value == null) {
+        setError('数値を読み取れませんでした。範囲を調整するか再撮影してください。');
+      } else {
+        setOcrValue(first.value);
+        setOcrConfidence(first.confidence ?? null);
+        setAveWindSpeed(first.value.toFixed(2));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'OCRに失敗しました');
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
   if (!currentMeasurementPoint || !currentPhotoData) {
     return null;
   }
@@ -135,8 +239,29 @@ export function OCRConfirmScreen() {
         <div className="bg-white rounded-lg shadow p-8">
           <div className="mb-6">
             <p className="text-sm font-medium text-gray-700 mb-3">撮影画像</p>
-            <div className="bg-black rounded-lg overflow-hidden">
-              <img src={currentPhotoData} alt="測定画像" className="w-full h-auto" />
+            <div
+              className="bg-black rounded-lg overflow-hidden relative select-none"
+              ref={containerRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              <img ref={imgRef} src={currentPhotoData} alt="測定画像" className="w-full h-auto block" />
+              {roi && (
+                <div
+                  className="absolute border-2 border-blue-400 bg-blue-200/20 rounded"
+                  style={{
+                    left: `${roi.x}px`,
+                    top: `${roi.y}px`,
+                    width: `${roi.width}px`,
+                    height: `${roi.height}px`,
+                  }}
+                />
+              )}
+              {isSelecting && (
+                <div className="absolute inset-0 bg-blue-200/10 pointer-events-none" />
+              )}
             </div>
             <div className="mt-4 bg-blue-50 border border-blue-100 text-blue-900 rounded-lg p-4 text-sm leading-relaxed">
               <p className="font-semibold mb-2">OCRをかける位置を教えてください</p>
@@ -149,23 +274,25 @@ export function OCRConfirmScreen() {
                 <button
                   type="button"
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition disabled:bg-gray-400"
-                  disabled
-                  title="（実装予定）範囲選択後にOCRを実行します"
+                  onClick={runOcr}
+                  disabled={saving || ocrLoading}
                 >
-                  この範囲で読み取る
+                  {ocrLoading ? '読み取り中...' : 'この範囲で読み取る'}
                 </button>
                 <button
                   type="button"
                   className="px-4 py-2 border border-blue-200 text-blue-800 text-sm font-semibold rounded-lg hover:bg-blue-50 transition disabled:bg-gray-100"
-                  disabled
-                  title="（実装予定）範囲をリセットします"
+                  onClick={resetRoi}
+                  disabled={saving || ocrLoading}
                 >
                   範囲をリセット
                 </button>
               </div>
-              <p className="text-xs text-blue-800 mt-2">
-                ※範囲選択とOCR実行のUIは順次追加予定です。現状は読み取りたい数値を手入力してください。
-              </p>
+              {ocrValue !== null && (
+                <p className="text-xs text-blue-800 mt-2">
+                  OCR結果: {ocrValue.toFixed(2)} (信頼度 {ocrConfidence !== null ? ocrConfidence.toFixed(1) : '-'} )
+                </p>
+              )}
             </div>
           </div>
 
