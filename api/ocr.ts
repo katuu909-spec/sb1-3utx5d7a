@@ -6,6 +6,8 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 
+export const config = { runtime: 'nodejs' };
+
 interface Roi {
   x: number;
   y: number;
@@ -70,14 +72,19 @@ export default async function handler(req: any, res: any) {
         .threshold()
         .toBuffer();
 
-      // Node 環境で addEventListener が未定義の場合のフォールバック
+      // Node 環境で addEventListener が未定義の場合のフォールバック（ブラウザAPI要求を無視）
       if (typeof (globalThis as any).addEventListener !== 'function') {
         (globalThis as any).addEventListener = () => {};
       }
 
-      // ワーカー/コアをローカルnode_modulesから絶対パス指定（Vercel環境でも解決可能なものを使用）
-      const workerPath = require.resolve('tesseract.js/dist/worker.min.js');
-      const corePath = require.resolve('tesseract.js-core/tesseract-core-simd.wasm');
+      // Node向けワーカーとコアを指定（tesseract.js 4.x）
+      const workerPath = require.resolve('tesseract.js/dist/node/worker-node.js');
+      let corePath: string;
+      try {
+        corePath = require.resolve('tesseract.js-core/tesseract-core.wasm');
+      } catch {
+        corePath = require.resolve('tesseract.js-core/tesseract-core-simd.wasm');
+      }
       const langPath = 'https://tessdata.projectnaptha.com/5/tessdata_fast';
 
       const {
