@@ -173,23 +173,37 @@ export function OCRConfirmScreen() {
     }
   };
 
-  const setRoiAroundPoint = (clientX: number, clientY: number, ratio = DEFAULT_ROI_RATIO) => {
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const width = Math.max(MIN_ROI_SIZE, rect.width * ratio.w);
-    const height = Math.max(MIN_ROI_SIZE, rect.height * ratio.h);
-    const x = clampRoi(
+  const normalizeRoi = (
+    roiRaw: { x: number; y: number; width: number; height: number },
+    containerW: number,
+    containerH: number
+  ) => {
+    return clampRoi(
       {
-        x: clientX - rect.left - width / 2,
-        y: clientY - rect.top - height / 2,
-        width,
-        height,
+        x: roiRaw.x,
+        y: roiRaw.y,
+        width: Math.max(MIN_ROI_SIZE, roiRaw.width),
+        height: Math.max(MIN_ROI_SIZE, roiRaw.height),
       },
-      rect.width,
-      rect.height
+      containerW,
+      containerH
     );
-    setRoi(x);
+  };
+
+  const setRoiAroundPoint = (
+    pointInContainer: { x: number; y: number },
+    containerSize: { w: number; h: number },
+    ratio = DEFAULT_ROI_RATIO
+  ) => {
+    const width = Math.max(MIN_ROI_SIZE, containerSize.w * ratio.w);
+    const height = Math.max(MIN_ROI_SIZE, containerSize.h * ratio.h);
+    const roiRaw = {
+      x: pointInContainer.x - width / 2,
+      y: pointInContainer.y - height / 2,
+      width,
+      height,
+    };
+    setRoi(normalizeRoi(roiRaw, containerSize.w, containerSize.h));
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -221,22 +235,16 @@ export function OCRConfirmScreen() {
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (activePointerId !== null && activePointerId !== e.pointerId) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    let finalRoi = roi;
 
     // ドラッグ幅がほぼゼロ＝タップ扱いで自動範囲生成
     if (startPoint && roi && roi.width < 10 && roi.height < 10) {
-      setRoiAroundPoint(e.clientX, e.clientY);
-      finalRoi = null; // setRoiInside set separately
+      setRoiAroundPoint(
+        { x: e.clientX - rect.left, y: e.clientY - rect.top },
+        { w: rect.width, h: rect.height }
+      );
     } else if (roi) {
-      finalRoi = {
-        x: roi.x,
-        y: roi.y,
-        width: Math.max(MIN_ROI_SIZE, roi.width),
-        height: Math.max(MIN_ROI_SIZE, roi.height),
-      };
-      // 画像枠内に収める
-      const clamped = clampRoi(finalRoi, rect.width, rect.height);
-      setRoi(clamped);
+      const normalized = normalizeRoi(roi, rect.width, rect.height);
+      setRoi(normalized);
     }
 
     setIsSelecting(false);
@@ -273,14 +281,14 @@ export function OCRConfirmScreen() {
       let targetRoi = roi;
       if (!targetRoi) {
         // デフォルト: 画像中央を幅70%, 高さ30%で切り出す
-        targetRoi = {
+        const base = {
           x: displayRect.width * 0.15,
           y: displayRect.height * 0.35,
           width: Math.max(MIN_ROI_SIZE, displayRect.width * DEFAULT_ROI_RATIO.w),
           height: Math.max(MIN_ROI_SIZE, displayRect.height * DEFAULT_ROI_RATIO.h),
         };
-        const clamped = clampRoi(targetRoi, resized.width, resized.height);
-        setRoi(clamped);
+        targetRoi = clampRoi(base, displayRect.width, displayRect.height);
+        setRoi(targetRoi);
       }
 
       const scaleX = resized.width / displayRect.width;
@@ -414,7 +422,16 @@ export function OCRConfirmScreen() {
                 <button
                   type="button"
                   className="px-4 py-2 border border-blue-200 text-blue-800 text-sm font-semibold rounded-lg hover:bg-blue-50 transition disabled:bg-gray-100"
-                  onClick={() => setRoiAroundPoint(containerRef.current?.getBoundingClientRect().left ?? 0, containerRef.current?.getBoundingClientRect().top ?? 0)}
+                  onClick={() => {
+                    const container = containerRef.current;
+                    if (!container) return;
+                    const rect = container.getBoundingClientRect();
+                    setRoiAroundPoint(
+                      { x: rect.width / 2, y: rect.height / 2 },
+                      { w: rect.width, h: rect.height },
+                      DEFAULT_ROI_RATIO
+                    );
+                  }}
                   disabled={saving || ocrLoading}
                   title="中央に自動設定"
                 >
@@ -427,7 +444,11 @@ export function OCRConfirmScreen() {
                     const container = containerRef.current;
                     if (!container) return;
                     const rect = container.getBoundingClientRect();
-                    setRoiAroundPoint(rect.left + rect.width / 2, rect.top + rect.height * 0.2, { w: 0.6, h: 0.2 });
+                    setRoiAroundPoint(
+                      { x: rect.width / 2, y: rect.height * 0.25 },
+                      { w: rect.width, h: rect.height },
+                      { w: 0.6, h: 0.25 }
+                    );
                   }}
                   disabled={saving || ocrLoading}
                   title="上部を読む"
