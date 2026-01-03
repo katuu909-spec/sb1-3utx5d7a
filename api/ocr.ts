@@ -77,9 +77,14 @@ export default async function handler(req: any, res: any) {
         (globalThis as any).addEventListener = () => {};
       }
 
-      // worker は tesseract.js 同梱のもの、core は CDN を使用して ENOENT を回避
-      const workerPath = require.resolve('tesseract.js/dist/worker.min.js');
-      const corePath = 'https://unpkg.com/tesseract.js-core@4.0.1/tesseract-core.wasm';
+      // tesseract.js 2.x の Node 用ワーカーとコアを使用
+      const workerPath = require.resolve('tesseract.js/src/node/worker.js');
+      let corePath: string;
+      try {
+        corePath = require.resolve('tesseract.js-core/tesseract-core.wasm');
+      } catch {
+        corePath = require.resolve('tesseract.js-core/tesseract-core-simd.wasm');
+      }
       const langPath = 'https://tessdata.projectnaptha.com/5/tessdata_fast';
 
       const {
