@@ -308,15 +308,16 @@ export function OCRConfirmScreen() {
       // ROI 部分を切り出してクライアントサイドで OCR 実行
       const roiDataUrl = await cropDataUrl(resized.dataUrl, roiScaled);
       const { default: Tesseract } = await import('tesseract.js');
+      const langPathLocal = `${window.location.origin}/tessdata/eng.traineddata.gz`;
+
       const {
         data: { text, confidence },
       } = await Tesseract.recognize(roiDataUrl, 'eng', {
         workerPath: 'https://unpkg.com/tesseract.js@4.0.2/dist/worker.min.js',
         // corePath: wasm本体を読み込むJSラッパー（.wasm.js）を指定し、MIME問題を回避
         corePath: 'https://unpkg.com/tesseract.js-core@4.0.2/tesseract-core-simd.wasm.js',
-        // langPath: 403/404回避のため raw.githubusercontent ミラーを指定
-        langPath:
-          'https://raw.githubusercontent.com/naptha/tessdata/gh-pages/5/tessdata_fast/eng.traineddata.gz',
+        // オフライン運用: public/tessdata/eng.traineddata.gz を配置して読み込む
+        langPath: langPathLocal,
         tessedit_pageseg_mode: 7, // single line
         tessedit_char_whitelist: '0123456789.-',
       } as any);
@@ -330,7 +331,12 @@ export function OCRConfirmScreen() {
         setAveWindSpeed(value.toFixed(2));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'OCRに失敗しました');
+      const msg = err instanceof Error ? err.message : 'OCRに失敗しました';
+      if (msg.includes('traineddata') || msg.includes('404') || msg.includes('Network error')) {
+        setError('OCRモデルファイルが読み込めませんでした。public/tessdata/eng.traineddata.gz を配置してください。');
+      } else {
+        setError(msg);
+      }
     } finally {
       setOcrLoading(false);
     }
