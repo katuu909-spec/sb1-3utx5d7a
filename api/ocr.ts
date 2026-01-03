@@ -2,6 +2,9 @@
 import sharp from 'sharp';
 import Tesseract from 'tesseract.js';
 import path from 'path';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 
 interface Roi {
   x: number;
