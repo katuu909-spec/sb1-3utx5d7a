@@ -61,6 +61,9 @@ async function cropDataUrl(base64: string, roi: { x: number; y: number; width: n
 }
 
 export function OCRConfirmScreen() {
+  const MIN_ROI_SIZE = 48; // 指でのタップでも見える最小サイズ(px)
+  const DEFAULT_ROI_RATIO = { w: 0.7, h: 0.3 }; // 画像に対するデフォルト比率
+
   const [aveWindSpeed, setAveWindSpeed] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -170,6 +173,25 @@ export function OCRConfirmScreen() {
     }
   };
 
+  const setRoiAroundPoint = (clientX: number, clientY: number, ratio = DEFAULT_ROI_RATIO) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const width = Math.max(MIN_ROI_SIZE, rect.width * ratio.w);
+    const height = Math.max(MIN_ROI_SIZE, rect.height * ratio.h);
+    const x = clampRoi(
+      {
+        x: clientX - rect.left - width / 2,
+        y: clientY - rect.top - height / 2,
+        width,
+        height,
+      },
+      rect.width,
+      rect.height
+    );
+    setRoi(x);
+  };
+
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (saving || ocrLoading) return;
     if (activePointerId !== null && activePointerId !== e.pointerId) return;
@@ -198,6 +220,25 @@ export function OCRConfirmScreen() {
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (activePointerId !== null && activePointerId !== e.pointerId) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    let finalRoi = roi;
+
+    // ドラッグ幅がほぼゼロ＝タップ扱いで自動範囲生成
+    if (startPoint && roi && roi.width < 10 && roi.height < 10) {
+      setRoiAroundPoint(e.clientX, e.clientY);
+      finalRoi = null; // setRoiInside set separately
+    } else if (roi) {
+      finalRoi = {
+        x: roi.x,
+        y: roi.y,
+        width: Math.max(MIN_ROI_SIZE, roi.width),
+        height: Math.max(MIN_ROI_SIZE, roi.height),
+      };
+      // 画像枠内に収める
+      const clamped = clampRoi(finalRoi, rect.width, rect.height);
+      setRoi(clamped);
+    }
+
     setIsSelecting(false);
     setStartPoint(null);
     setActivePointerId(null);
@@ -231,14 +272,15 @@ export function OCRConfirmScreen() {
 
       let targetRoi = roi;
       if (!targetRoi) {
-        // デフォルト: 画像中央を幅80%, 高さ40%で切り出す
+        // デフォルト: 画像中央を幅70%, 高さ30%で切り出す
         targetRoi = {
-          x: displayRect.width * 0.1,
-          y: displayRect.height * 0.3,
-          width: displayRect.width * 0.8,
-          height: displayRect.height * 0.4,
+          x: displayRect.width * 0.15,
+          y: displayRect.height * 0.35,
+          width: Math.max(MIN_ROI_SIZE, displayRect.width * DEFAULT_ROI_RATIO.w),
+          height: Math.max(MIN_ROI_SIZE, displayRect.height * DEFAULT_ROI_RATIO.h),
         };
-        setRoi(targetRoi);
+        const clamped = clampRoi(targetRoi, resized.width, resized.height);
+        setRoi(clamped);
       }
 
       const scaleX = resized.width / displayRect.width;
@@ -352,7 +394,7 @@ export function OCRConfirmScreen() {
                 <li>範囲が決まったら「この範囲で読み取る」ボタンを押してOCRを実行してください。</li>
                 <li>読み取りがうまくいかない場合は、再撮影または範囲を調整してください。</li>
               </ul>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition disabled:bg-gray-400"
@@ -368,6 +410,29 @@ export function OCRConfirmScreen() {
                   disabled={saving || ocrLoading}
                 >
                   範囲をリセット
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-blue-200 text-blue-800 text-sm font-semibold rounded-lg hover:bg-blue-50 transition disabled:bg-gray-100"
+                  onClick={() => setRoiAroundPoint(containerRef.current?.getBoundingClientRect().left ?? 0, containerRef.current?.getBoundingClientRect().top ?? 0)}
+                  disabled={saving || ocrLoading}
+                  title="中央に自動設定"
+                >
+                  中央を自動選択
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-blue-200 text-blue-800 text-sm font-semibold rounded-lg hover:bg-blue-50 transition disabled:bg-gray-100"
+                  onClick={() => {
+                    const container = containerRef.current;
+                    if (!container) return;
+                    const rect = container.getBoundingClientRect();
+                    setRoiAroundPoint(rect.left + rect.width / 2, rect.top + rect.height * 0.2, { w: 0.6, h: 0.2 });
+                  }}
+                  disabled={saving || ocrLoading}
+                  title="上部を読む"
+                >
+                  上部を自動選択
                 </button>
               </div>
               {ocrValue !== null && (
