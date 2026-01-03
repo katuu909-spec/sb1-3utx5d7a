@@ -1,6 +1,7 @@
 // @ts-nocheck
 import sharp from 'sharp';
 import Tesseract from 'tesseract.js';
+import path from 'path';
 
 interface Roi {
   x: number;
@@ -66,15 +67,18 @@ export default async function handler(req: any, res: any) {
         .threshold()
         .toBuffer();
 
+      const workerPath = path.resolve(process.cwd(), 'node_modules/tesseract.js/dist/worker.min.js');
+      const corePath = path.resolve(process.cwd(), 'node_modules/tesseract.js-core/tesseract-core-simd.wasm');
+      const langPath = 'https://tessdata.projectnaptha.com/5/tessdata_fast';
+
       const {
         data: { text, confidence },
       } = await Tesseract.recognize(roiBuffer, 'eng', {
         tessedit_pageseg_mode: 7, // single line
         tessedit_char_whitelist: '0123456789.-',
-        // VercelでのENONENTを避けるため、core/worker/langをCDNに固定
-        corePath: 'https://unpkg.com/tesseract.js-core@5.0.3/tesseract-core-simd.wasm',
-        workerPath: 'https://unpkg.com/tesseract.js@5.0.6/dist/worker.min.js',
-        langPath: 'https://tessdata.projectnaptha.com/5/tessdata_fast',
+        workerPath,
+        corePath,
+        langPath,
       } as any);
 
       results.push({
