@@ -61,8 +61,8 @@ async function cropDataUrl(base64: string, roi: { x: number; y: number; width: n
 }
 
 export function OCRConfirmScreen() {
-  // 最小サイズはほぼゼロにし、ユーザーが自由に選択できるようにする
-  const MIN_ROI_SIZE = 1;
+  // 最小サイズは小さすぎない程度に確保しつつ、ドラッグ範囲はユーザー任せ
+  const MIN_ROI_SIZE = 32;
   const DEFAULT_ROI_RATIO = { w: 0.7, h: 0.3 }; // 画像に対するデフォルト比率
 
   const [aveWindSpeed, setAveWindSpeed] = useState('');
@@ -237,9 +237,9 @@ export function OCRConfirmScreen() {
     if (activePointerId !== null && activePointerId !== e.pointerId) return;
     const rect = e.currentTarget.getBoundingClientRect();
 
-    // ドラッグした範囲をそのまま採用し、境界内にだけクランプする
+    // ドラッグ範囲をそのまま採用し、最小サイズ＆境界内にクランプ
     if (roi) {
-      const clamped = clampRoi(
+      const normalized = normalizeRoi(
         {
           x: roi.x,
           y: roi.y,
@@ -249,7 +249,7 @@ export function OCRConfirmScreen() {
         rect.width,
         rect.height
       );
-      setRoi(clamped);
+      setRoi(normalized);
     }
 
     setIsSelecting(false);
