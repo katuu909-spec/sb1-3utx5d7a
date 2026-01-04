@@ -237,15 +237,19 @@ export function OCRConfirmScreen() {
     if (activePointerId !== null && activePointerId !== e.pointerId) return;
     const rect = e.currentTarget.getBoundingClientRect();
 
-    // ドラッグ幅がほぼゼロ＝タップ扱いで自動範囲生成
-    if (startPoint && roi && roi.width < 10 && roi.height < 10) {
-      setRoiAroundPoint(
-        { x: e.clientX - rect.left, y: e.clientY - rect.top },
-        { w: rect.width, h: rect.height }
+    // ドラッグした範囲をそのまま採用し、境界内にだけクランプする
+    if (roi) {
+      const clamped = clampRoi(
+        {
+          x: roi.x,
+          y: roi.y,
+          width: Math.max(1, roi.width),
+          height: Math.max(1, roi.height),
+        },
+        rect.width,
+        rect.height
       );
-    } else if (roi) {
-      const normalized = normalizeRoi(roi, rect.width, rect.height);
-      setRoi(normalized);
+      setRoi(clamped);
     }
 
     setIsSelecting(false);
