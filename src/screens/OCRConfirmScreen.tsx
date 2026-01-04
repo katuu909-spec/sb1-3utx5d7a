@@ -61,7 +61,8 @@ async function cropDataUrl(base64: string, roi: { x: number; y: number; width: n
 }
 
 export function OCRConfirmScreen() {
-  const MIN_ROI_SIZE = 48; // 指でのタップでも見える最小サイズ(px)
+  // 最小サイズはほぼゼロにし、ユーザーが自由に選択できるようにする
+  const MIN_ROI_SIZE = 1;
   const DEFAULT_ROI_RATIO = { w: 0.7, h: 0.3 }; // 画像に対するデフォルト比率
 
   const [aveWindSpeed, setAveWindSpeed] = useState('');

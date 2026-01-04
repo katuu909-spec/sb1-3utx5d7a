@@ -22,8 +22,30 @@ export function LocationDetailScreen() {
   const [pointCount, setPointCount] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [existingOffset, setExistingOffset] = useState<number>(0);
 
-  const locationName = `${currentLocationGroupName}${currentLocationIndex}`;
+  const locationNumber = existingOffset + currentLocationIndex;
+  const locationName = `${currentLocationGroupName}${locationNumber}`;
+
+  React.useEffect(() => {
+    const fetchExistingOffset = async () => {
+      if (!currentProject || !currentLocationGroupName) return;
+      const { data, error } = await supabase
+        .from('measurement_points')
+        .select('location_number')
+        .eq('project_id', currentProject.id)
+        .eq('location_group_name', currentLocationGroupName)
+        .order('location_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!error && data?.location_number) {
+        setExistingOffset(data.location_number);
+      } else {
+        setExistingOffset(0);
+      }
+    };
+    fetchExistingOffset();
+  }, [currentProject, currentLocationGroupName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +80,7 @@ export function LocationDetailScreen() {
         project_id: currentProject.id,
         name: locationName,
         location_group_name: currentLocationGroupName,
-        location_number: currentLocationIndex,
+        location_number: locationNumber,
         target_point_count: parseInt(pointCount, 10),
         shape_type: shapeType,
       };

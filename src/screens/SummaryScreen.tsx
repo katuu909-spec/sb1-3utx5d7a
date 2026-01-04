@@ -220,7 +220,7 @@ export function SummaryScreen() {
                         key={loc.key}
                         className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 shadow-sm"
                       >
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-start justify-between mb-2">
                           <h3 className="text-lg font-semibold text-emerald-900">
                             {loc.names[0]}
                             {loc.names.length > 1 && (
@@ -229,42 +229,15 @@ export function SummaryScreen() {
                               </span>
                             )}
                           </h3>
-                          <span
-                            className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                              loc.shape_type === 'circular'
-                                ? 'bg-emerald-100 text-emerald-900'
-                                : 'bg-emerald-200 text-emerald-900'
-                            }`}
-                          >
-                            {loc.shape_type === 'circular' ? '円形' : '四角形'}
+                        </div>
+                        <div className="text-sm text-emerald-800">
+                          <span className="text-emerald-700">寸法: </span>
+                          <span className="font-semibold text-emerald-900">
+                            {loc.shape_type === 'circular' && loc.diameter_mm
+                              ? `φ${loc.diameter_mm}mm`
+                              : `${loc.vertical_mm}mm × ${loc.horizontal_mm ?? '-'}mm`}
                           </span>
                         </div>
-                        <dl className="grid grid-cols-2 gap-2 text-sm text-emerald-800">
-                          <div>
-                            <dt className="text-emerald-700">寸法</dt>
-                            <dd className="font-semibold text-emerald-900">
-                              {loc.shape_type === 'circular' && loc.diameter_mm
-                                ? `φ${loc.diameter_mm}mm`
-                                : `${loc.vertical_mm}mm × ${loc.horizontal_mm ?? '-'}mm`}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className="text-emerald-700">測定点数</dt>
-                            <dd className="font-semibold text-emerald-900">
-                              {loc.target_point_count_total} 点
-                            </dd>
-                          </div>
-                          <div>
-                            <dt className="text-emerald-700">面積</dt>
-                            <dd className="font-semibold text-emerald-900">{loc.area.toFixed(4)} m²</dd>
-                          </div>
-                          <div>
-                            <dt className="text-emerald-700">風量</dt>
-                            <dd className="font-semibold text-emerald-900">
-                              {loc.airflow.toFixed(2)} m³/min
-                            </dd>
-                          </div>
-                        </dl>
                       </div>
                     );
                   })}
