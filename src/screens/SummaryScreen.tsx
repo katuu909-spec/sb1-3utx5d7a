@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ExternalLink, ImageIcon } from 'lucide-react';
+import { ArrowLeft, ExternalLink, ImageIcon, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import type { MeasurementPoint, MeasurementReading } from '../types';
@@ -167,6 +168,76 @@ export function SummaryScreen() {
     return null;
   }
 
+  const exportToExcel = () => {
+    // グループごとに表を分け、ヘッダーを繰り返す
+    const maxPoints = locations.reduce((m, loc) => Math.max(m, loc.readings.length), 0);
+    const pointCols = Math.max(8, maxPoints);
+    const headers = [
+      '番号',
+      '幅(mm)',
+      '奥(mm)',
+      ...Array.from({ length: pointCols }, (_, i) => `${i + 1}`),
+      '面平均風速(m/s)',
+      '風量(m³/min)',
+    ];
+
+    // グループ化（元データをそのまま）
+    const groupMap: Record<string, LocationWithReadings[]> = {};
+    locations.forEach((loc) => {
+      const groupName = loc.location_group_name || '未設定';
+      if (!groupMap[groupName]) groupMap[groupName] = [];
+      groupMap[groupName].push(loc);
+    });
+
+    const sheetData: (string | number)[][] = [];
+
+    Object.entries(groupMap).forEach(([groupName, locs], groupIndex) => {
+      if (groupIndex > 0) {
+        sheetData.push([]); // 空行で区切る
+      }
+      // グループ名行
+      sheetData.push([`グループ: ${groupName}`]);
+      // ヘッダー行
+      sheetData.push(headers);
+
+      locs.forEach((loc) => {
+        const isCircular = loc.shape_type === 'circular';
+        const width = isCircular ? loc.diameter_mm ?? 0 : loc.horizontal_mm ?? 0;
+        const depth = loc.vertical_mm ?? 0;
+        const readingsOrdered = Array.from({ length: pointCols }, (_, i) => {
+          const r = loc.readings.find((rd) => rd.point_number === i + 1);
+          return r ? Number(r.ave_wind_speed ?? 0) : '';
+        });
+
+        const avgSpeed =
+          loc.readings.length === 0
+            ? 0
+            : loc.readings.reduce((s, r) => s + Number(r.ave_wind_speed ?? 0), 0) / loc.readings.length;
+        const area =
+          loc.shape_type === 'circular' && loc.diameter_mm
+            ? (Math.PI * Math.pow(loc.diameter_mm / 2, 2)) / 1000000
+            : loc.horizontal_mm
+              ? (loc.vertical_mm * loc.horizontal_mm) / 1000000
+              : 0;
+        const airflow = avgSpeed * area * 60;
+
+        sheetData.push([
+          loc.location_number ?? '',
+          width,
+          depth,
+          ...readingsOrdered.map((v) => (v === '' ? '' : Number(v.toFixed(2)))),
+          Number(avgSpeed.toFixed(3)),
+          Number(airflow.toFixed(1)),
+        ]);
+      });
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+    XLSX.writeFile(wb, 'summary.xlsx');
+  };
+
   return (
     <div className="min-h-screen bg-emerald-50">
       <div className="bg-white shadow">
@@ -184,6 +255,13 @@ export function SummaryScreen() {
               製造番号: {currentProject.serial_number} / 機種: {currentProject.model_type}
             </p>
           </div>
+          <button
+            onClick={exportToExcel}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition"
+          >
+            <FileSpreadsheet className="w-5 h-5" />
+            Excel出力
+          </button>
         </div>
       </div>
 
