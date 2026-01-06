@@ -241,7 +241,7 @@ export function SummaryScreen() {
   return (
     <div className="min-h-screen bg-emerald-50">
       <div className="bg-white shadow">
-        <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <button
               onClick={() => setCurrentScreen('measurement-locations')}
@@ -255,13 +255,15 @@ export function SummaryScreen() {
               製造番号: {currentProject.serial_number} / 機種: {currentProject.model_type}
             </p>
           </div>
-          <button
-            onClick={exportToExcel}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition"
-          >
-            <FileSpreadsheet className="w-5 h-5" />
-            Excel出力
-          </button>
+          <div className="w-full sm:w-auto">
+            <button
+              onClick={exportToExcel}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition"
+            >
+              <FileSpreadsheet className="w-5 h-5" />
+              Excel出力
+            </button>
+          </div>
         </div>
       </div>
 

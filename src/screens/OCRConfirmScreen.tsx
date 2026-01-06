@@ -376,47 +376,55 @@ export function OCRConfirmScreen() {
 
       <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow p-8">
-          <div className="mb-6">
-            <p className="text-sm font-medium text-gray-700 mb-3">撮影画像</p>
-            <div
-              className="bg-black rounded-lg overflow-hidden relative select-none"
-              ref={containerRef}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              style={{ touchAction: 'none' }}
-            >
-              <img
-                ref={imgRef}
-                src={currentPhotoData}
-                alt="測定画像"
-                className="w-full h-auto block"
-                draggable={false}
-              />
-              {roi && (
-                <div
-                  className="absolute border-2 border-blue-400 bg-blue-200/20 rounded"
-                  style={{
-                    left: `${roi.x}px`,
-                    top: `${roi.y}px`,
-                    width: `${roi.width}px`,
-                    height: `${roi.height}px`,
-                  }}
-                />
-              )}
-              {isSelecting && (
-                <div className="absolute inset-0 bg-blue-200/10 pointer-events-none" />
-              )}
-            </div>
-            <div className="mt-4 bg-blue-50 border border-blue-100 text-blue-900 rounded-lg p-4 text-sm leading-relaxed">
+          <div className="mb-6 space-y-4">
+            <div className="bg-blue-50 border border-blue-100 text-blue-900 rounded-lg p-4 text-sm leading-relaxed">
               <p className="font-semibold mb-2">OCRをかける位置を教えてください</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>読み取りたい数値の「範囲」を決めてください（数値部分だけを囲むイメージ）。</li>
                 <li>範囲が決まったら「この範囲で読み取る」ボタンを押してOCRを実行してください。</li>
                 <li>読み取りがうまくいかない場合は、再撮影または範囲を調整してください。</li>
               </ul>
+              {ocrValue !== null && (
+                <p className="text-xs text-blue-800 mt-2">
+                  OCR結果: {ocrValue.toFixed(2)} (信頼度 {ocrConfidence !== null ? ocrConfidence.toFixed(1) : '-'} )
+                </p>
+              )}
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-3">撮影画像</p>
+              <div
+                className="bg-black rounded-lg overflow-hidden relative select-none"
+                ref={containerRef}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                onPointerLeave={handlePointerUp}
+                style={{ touchAction: 'none' }}
+              >
+                <img
+                  ref={imgRef}
+                  src={currentPhotoData}
+                  alt="測定画像"
+                  className="w-full h-auto block"
+                  draggable={false}
+                />
+                {roi && (
+                  <div
+                    className="absolute border-2 border-blue-400 bg-blue-200/20 rounded"
+                    style={{
+                      left: `${roi.x}px`,
+                      top: `${roi.y}px`,
+                      width: `${roi.width}px`,
+                      height: `${roi.height}px`,
+                    }}
+                  />
+                )}
+                {isSelecting && (
+                  <div className="absolute inset-0 bg-blue-200/10 pointer-events-none" />
+                )}
+              </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -471,11 +479,6 @@ export function OCRConfirmScreen() {
                   上部を自動選択
                 </button>
               </div>
-              {ocrValue !== null && (
-                <p className="text-xs text-blue-800 mt-2">
-                  OCR結果: {ocrValue.toFixed(2)} (信頼度 {ocrConfidence !== null ? ocrConfidence.toFixed(1) : '-'} )
-                </p>
-              )}
             </div>
           </div>
 
