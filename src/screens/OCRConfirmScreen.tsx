@@ -260,6 +260,62 @@ export function OCRConfirmScreen() {
     }
   };
 
+  // iOS/Android で pointer イベントが入らない場合のフォールバック
+  const getTouchPoint = (e: React.TouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0] || e.changedTouches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    return { rect, point: { x: touch.clientX - rect.left, y: touch.clientY - rect.top } };
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (saving || ocrLoading) return;
+    const info = getTouchPoint(e);
+    if (!info) return;
+    setStartPoint(info.point);
+    setRoi({ x: info.point.x, y: info.point.y, width: 1, height: 1 });
+    setIsSelecting(true);
+    setActivePointerId(-1); // タッチ専用
+    e.preventDefault();
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isSelecting || !startPoint) return;
+    const info = getTouchPoint(e);
+    if (!info) return;
+    const { point } = info;
+    const x = Math.min(startPoint.x, point.x);
+    const y = Math.min(startPoint.y, point.y);
+    const width = Math.abs(point.x - startPoint.x);
+    const height = Math.abs(point.y - startPoint.y);
+    setRoi({ x, y, width, height });
+    e.preventDefault();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isSelecting) return;
+    const info = getTouchPoint(e);
+    const rect = info?.rect ?? e.currentTarget.getBoundingClientRect();
+
+    if (roi) {
+      const normalized = normalizeRoi(
+        {
+          x: roi.x,
+          y: roi.y,
+          width: Math.max(1, roi.width),
+          height: Math.max(1, roi.height),
+        },
+        rect.width,
+        rect.height
+      );
+      setRoi(normalized);
+    }
+
+    setIsSelecting(false);
+    setStartPoint(null);
+    setActivePointerId(null);
+    e.preventDefault();
+  };
+
   const resetRoi = () => {
     setRoi(null);
     setOcrValue(null);
@@ -401,6 +457,10 @@ export function OCRConfirmScreen() {
                 onPointerUp={handlePointerUp}
                 onPointerCancel={handlePointerUp}
                 onPointerLeave={handlePointerUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchEnd}
                 style={{ touchAction: 'none' }}
               >
                 <img
