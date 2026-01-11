@@ -200,6 +200,7 @@ export function SummaryScreen() {
       // ヘッダー行
       sheetData.push(headers);
 
+      let groupAirflow = 0;
       locs.forEach((loc) => {
         const isCircular = loc.shape_type === 'circular';
         const width = isCircular ? loc.diameter_mm ?? 0 : loc.horizontal_mm ?? 0;
@@ -220,6 +221,7 @@ export function SummaryScreen() {
               ? (loc.vertical_mm * loc.horizontal_mm) / 1000000
               : 0;
         const airflow = avgSpeed * area * 60;
+        groupAirflow += airflow;
 
         sheetData.push([
           loc.location_number ?? '',
@@ -227,9 +229,15 @@ export function SummaryScreen() {
           depth,
           ...readingsOrdered.map((v) => (v === '' ? '' : Number(v.toFixed(2)))),
           Number(avgSpeed.toFixed(3)),
-          Number(airflow.toFixed(1)),
+          Number(airflow.toFixed(2)),
         ]);
       });
+
+      // グループ合計行（風量のみ集計、1桁表示）
+      const totalRow = Array(headers.length).fill('');
+      totalRow[0] = '合計';
+      totalRow[headers.length - 1] = Number(groupAirflow.toFixed(1));
+      sheetData.push(totalRow);
     });
 
     const ws = XLSX.utils.aoa_to_sheet(sheetData);
@@ -287,7 +295,7 @@ export function SummaryScreen() {
                 <div className="text-right">
                   <p className="text-sm text-emerald-700">グループ風量合計</p>
                   <p className="text-3xl font-extrabold text-emerald-900">
-                    {group.totalAirflow.toFixed(2)} m³/min
+                    {group.totalAirflow.toFixed(1)} m³/min
                   </p>
                 </div>
               </div>
